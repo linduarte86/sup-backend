@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// comando criar migration: yarn prisma migrate dev
+model User {
+  id         String       @id @default(uuid())
+  name       String
+  email      String       @unique
+  password   String
+  nivel      NivelUsuario @default(OPERADOR) // padrão se não for informado
+  created_at DateTime     @default(now())
+  update_at  DateTime     @updatedAt
+
+  @@map("users")
+}
+
+enum NivelUsuario {
+  ADMIN
+  OPERADOR
+}
+
+model Equipamento {
+  id          String     @id @default(uuid())
+  name        String
+  modelo      Int        @default(2)
+  description String
+  ip          String
+  port        Int
+  ativo       Boolean    @default(true)
+  created_at  DateTime   @default(now())
+  update_at   DateTime   @updatedAt
+  LogFalha    LogFalha[]
+
+  @@map("equipamentos")
+}
+
+model Timejob {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  intervalo_ms Int      @default(1000) // padrão 1 segundo 
+  created_at   DateTime @default(now())
+  update_at    DateTime @updatedAt
+
+  @@map("timejob")
+}
+
+model LogFalha {
+  id            String       @id @default(uuid())
+  equipamento   Equipamento  @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
+  equipamentoId String
+  descricao     String       // Descrição geral do evento de falha
+  created_at    DateTime     @default(now())
+
+  itens         ItemFalha[]  // ← Um ou mais itens com detalhes da falha
+
+  @@map("logs_falhas")
+}
+
+model ItemFalha {
+  id         String     @id @default(uuid())
+  logId      String
+  log        LogFalha   @relation(fields: [logId], references: [id], onDelete: Cascade)
+  tipo       TipoFalha
+  indice     Int        // Ex: 3
+  descricao  String     // Mensagem específica da falha
+
+  @@map("itens_falhas")
+}
+
+enum TipoFalha {
+  AMPLIFICADOR
+  LINHA
+}
+
+model Contato {
+  id               String             @id @default(uuid())
+  name             String
+  email            String?            @unique
+  telefone         String? // formato internacional: +55...
+  receberEmail     Boolean            @default(true)
+  receberWhats     Boolean            @default(true)
+  created_at       DateTime           @default(now())
+  update_at        DateTime           @updatedAt
+  LogEnvioMensagem LogEnvioMensagem[]
+
+  @@map("contatos")
+}
+
+model LogEnvioMensagem {
+  id         String      @id @default(uuid())
+  contatoId  String
+  contato    Contato     @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  meioEnvio  MeioEnvio
+  conteudo   String
+  status     StatusEnvio
+  erro       String? // Mensagem de erro, se falhou
+  created_at DateTime    @default(now())
+
+  @@map("logs_envios_mensagens")
+}
+
+enum MeioEnvio {
+  EMAIL
+  WHATSAPP
+}
+
+enum StatusEnvio {
+  SUCESSO
+  FALHA
+}
+
+model TempoEnvioMensagem {
+  id  String @id @default(uuid())
+  name String @unique
+  tempo Int @default(60000) // Tempo em milissegundos para envio de mensagens
+  created_at DateTime @default(now())
+  update_at DateTime @updatedAt
+
+  @@map("tempo_envio_mensagens")
+}
+
+// sempre que houver mudanças no schema, rodar o comando: npx prisma generate, isso recompila os clientes do Prisma com base no schema.prisma
