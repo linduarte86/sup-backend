@@ -20,6 +20,7 @@ import { ReadTempoMensagemController } from "./controllers/tempoEnvioMensagem/re
 import { UpdateTempoMensagemController } from "./controllers/tempoEnvioMensagem/updateTempoMensagemController";
 import { ReadLogsController } from "./controllers/logs/readLogsController";
 import { DeleteLogsController } from "./controllers/logs/deleteLogsController";
+import { UpdateZonaController } from "./controllers/zona/UpdateZonaController";
 
 const router = Router();
 
@@ -37,6 +38,9 @@ router.post('/equipamentos', isAuthenticated, new CreateEquipController().handle
 router.get('/equipamentos', isAuthenticated, new ReadEquipController().handle);
 router.put('/equipamentos/:equip_id', isAuthenticated, new UpdateEquipController().handle);
 router.delete('/equipamentos/:equip_id', isAuthenticated, new DeleteEquipController().handle);
+
+// -- ROTA DE ZONAS
+router.put('/zonas/:equipamento_id', isAuthenticated, new UpdateZonaController().handle);
 
 //--ROTAS DE CONTATOS
 router.post('/contatos', isAuthenticated, new ContatosController().handle);

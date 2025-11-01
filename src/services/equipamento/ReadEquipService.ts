@@ -17,8 +17,18 @@ class ReadEquipService {
         port: true,
         ativo: true,
         created_at: true,
-        update_at: true
+        update_at: true,
+
+        Zonas: {
+          select: {
+            id: true,
+            name: true,
+            numeroCanal: true,
+            equipamentoId: true
+          }
+        }
       }
+
     });
 
     const Equipamentos = equipamentos.map(equip => {

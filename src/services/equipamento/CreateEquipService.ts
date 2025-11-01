@@ -6,8 +6,18 @@ import { startEquipamentoTasks } from '../../bullRedis/tasks/supervisor/schedule
 class CreateEquipService {
   async execute(data: Prisma.EquipamentoCreateInput) {
     
+    // Cria o equipamento com 8 zonas (CH1 a CH8)
     const equip = await prismaClient.equipamento.create({
-      data
+      data: {
+        ...data,
+        Zonas: {
+          create: Array.from({ length: 8 }, (_, i) => ({
+            numeroCanal: i + 1,
+            name: `CH${i + 1}`,
+          })),
+        },
+      },
+      include: { Zonas: true }, // opcional: inclui as zonas no retorno
     });
 
     // Iniciar o agendador de tarefas para verificar os equipamentos

@@ -42,8 +42,20 @@ model Equipamento {
   created_at  DateTime   @default(now())
   update_at   DateTime   @updatedAt
   LogFalha    LogFalha[]
+  Zonas        Zonas[]
 
   @@map("equipamentos")
+}
+
+model Zonas {
+  id             String       @id @default(uuid())
+  name           String        // Nome customizável (ex: "Recepção", "Auditório", etc)
+  numeroCanal    Int           // Ex: 1 para CH1, 2 para CH2, etc
+  equipamentoId  String
+  equipamento    Equipamento   @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
+
+  @@unique([equipamentoId, numeroCanal]) // garante que o mesmo canal não se repita no mesmo equipamento
+  @@map("zonas")
 }
 
 model Timejob {
