@@ -7,6 +7,8 @@ class DeleteLogsController {
     const { log_id } = req.params;
 
     try {
+
+      console.log(`Deletando log com ID: ${log_id}`);
      
       const deleteLogsService = new DeleteLogsService();
       await deleteLogsService.execute(log_id.trim());

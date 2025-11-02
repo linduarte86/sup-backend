@@ -15,9 +15,10 @@ class DeleteLogsService {
 
       // Deleta o log e seus itens associados
       await prismaClient.itemFalha.deleteMany({
-        where: { logId }
+        where: { logId } 
       });
-
+      
+      // Deleta o log principal
       await prismaClient.logFalha.delete({
         where: { id: logId }
       });

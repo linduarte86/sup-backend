@@ -9,7 +9,11 @@ class ReadLogsService {
     const logs = await prismaClient.logFalha.findMany({
       include: {
         equipamento: true,
-        itens: true
+        itens: {
+          include: {
+            zona: true
+          }
+        }
       },
       orderBy: {
         created_at: "desc"

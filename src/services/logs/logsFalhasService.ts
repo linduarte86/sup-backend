@@ -71,23 +71,47 @@ async function LogsFalhasService(response, equipamento) {
     },
   });
 
+  // Carrega zonas do equipamento para mapear número -> zonaId
+  const zonasDoEquip = await prismaClient.zonas.findMany({ where: { equipamentoId: equipamento.id } });
+  // mapa númeroCanal -> objeto zona
+  const zonaMap = new Map<number, any>();
+  zonasDoEquip.forEach(z => zonaMap.set(z.numeroCanal, z));
+
   // Processa falhas de amplificadores
   const amplificadorFalhas = falhasAmplificadoresAtuais
-    .map((desc, idx) => ({
-      logId: logFalha.id,
-      tipo: "AMPLIFICADOR",
-      indice: idx + 1,
-      descricao: desc,
-    }));
+    .map((desc, idx) => {
+      // tenta extrair número (ex: 'Amplificador 4: Falha' -> 4)
+      const numMatch = desc.match(/(\d+)/);
+      const numero = numMatch ? Number(numMatch[1]) : null;
+      const zonaObj = numero ? zonaMap.get(numero) ?? null : null;
+      const zonaId = zonaObj ? zonaObj.id : null;
+
+      return {
+        logId: logFalha.id,
+        tipo: "AMPLIFICADOR",
+        indice: idx + 1,
+        descricao: desc,
+        zonaId,
+      };
+    });
 
   // Processa falhas de linhas
   const linhaFalhas = falhasLinhasAtuais
-    .map((desc, idx) => ({
-      logId: logFalha.id,
-      tipo: "LINHA",
-      indice: idx + 1,
-      descricao: desc,
-    }));
+    .map((desc, idx) => {
+      // tenta extrair número (ex: 'Linha 8: Alta' -> 8)
+      const numMatch = desc.match(/(\d+)/);
+      const numero = numMatch ? Number(numMatch[1]) : null;
+      const zonaObj = numero ? zonaMap.get(numero) ?? null : null;
+      const zonaId = zonaObj ? zonaObj.id : null;
+
+      return {
+        logId: logFalha.id,
+        tipo: "LINHA",
+        indice: idx + 1,
+        descricao: desc,
+        zonaId,
+      };
+    });
 
   // Salva todos os itens de falha
   if (amplificadorFalhas.length || linhaFalhas.length) {
@@ -112,7 +136,24 @@ async function LogsFalhasService(response, equipamento) {
 
     // Só envia notificação se o statusGeral ainda for diferente de OK
     if (ultimoLogAtual && !ultimoLogAtual.descricao.includes("Todas as falhas restauradas — status geral OK")) {
-      const mensagem = `\nFalha detectada no equipamento: ${equipamento.name}\n\nStatus geral: ${statusGeralAtual}\nStatus reserva: ${statusReservaAtual}\n\nAmplificadores com falha:\n${falhasAmplificadoresAtuais.length ? falhasAmplificadoresAtuais.map(f => `- ${f}`).join("\n") : "Nenhum"}\n\nLinhas com falha:\n${falhasLinhasAtuais.length ? falhasLinhasAtuais.map(f => `- ${f}`).join("\n") : "Nenhuma"}\n`;
+      // Formata cada falha prefixando com a zona (se encontrada)
+      const amplificadorLinhas = falhasAmplificadoresAtuais.map(desc => {
+        const m = desc.match(/(\d+)/);
+        const numero = m ? Number(m[1]) : null;
+        const zonaObj = numero ? zonaMap.get(numero) : null;
+        const prefix = zonaObj ? zonaObj.name : (numero ? `CH${numero}` : "");
+        return prefix ? `${prefix} - ${desc}` : desc;
+      });
+
+      const linhaLinhas = falhasLinhasAtuais.map(desc => {
+        const m = desc.match(/(\d+)/);
+        const numero = m ? Number(m[1]) : null;
+        const zonaObj = numero ? zonaMap.get(numero) : null;
+        const prefix = zonaObj ? zonaObj.name : (numero ? `CH${numero}` : "");
+        return prefix ? `${prefix} - ${desc}` : desc;
+      });
+
+      const mensagem = `\nFalha detectada no equipamento: ${equipamento.name}\n\nStatus geral: ${statusGeralAtual}\nStatus do amplificador reserva: ${statusReservaAtual}\n\nAmplificadores com falha:\n${amplificadorLinhas.length ? amplificadorLinhas.map(f => `- ${f}`).join("\n") : "Nenhum"}\n\nLinhas de sonofletores com falha:\n${linhaLinhas.length ? linhaLinhas.map(f => `- ${f}`).join("\n") : "Nenhuma"}\n`;
       await sendNotification(equipamento, mensagem);
     }
   }, tempoMensagem.tempo);

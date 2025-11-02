@@ -54,6 +54,8 @@ model Zonas {
   equipamentoId  String
   equipamento    Equipamento   @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
 
+  // Relação com ItemFalha (opcional)
+  itensFalha     ItemFalha[]
   @@unique([equipamentoId, numeroCanal]) // garante que o mesmo canal não se repita no mesmo equipamento
   @@map("zonas")
 }
@@ -87,6 +89,10 @@ model ItemFalha {
   tipo       TipoFalha
   indice     Int        // Ex: 3
   descricao  String     // Mensagem específica da falha
+
+  // Relação com Zonas (opcional, dependendo do tipo de falha)
+  zonaId     String?
+  zona       Zonas?     @relation(fields: [zonaId], references: [id], onDelete: Cascade)
 
   @@map("itens_falhas")
 }
