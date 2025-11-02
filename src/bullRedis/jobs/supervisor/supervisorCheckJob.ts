@@ -6,6 +6,7 @@
 
 import { Job } from "bull";
 import axios from "axios";
+import { io } from "../../../server";
 import { LogsFalhasService } from "../../../services/logs/logsFalhasService";
 import dotenv from "dotenv";
 
@@ -36,8 +37,20 @@ export const supervisorCheckProcesor = async (job: Job) => {
     // Chama o serviço de logs de falhas
     await LogsFalhasService(response.data, equipamento);
 
+    // Emite o status atualizado via Socket.io para o frontend
+    io.emit("statusEquipamento", {
+      equipamentoId: equipamento.id,
+      status: response.data,
+    });
+
   } catch (err) {
     console.error(`Erro ao verificar ${equipamento.name}:`, err.message);
     // TODO: Gerar log de falha, enviar mensagem se for o caso
+
+    // Emite o erro via Socket.io para o frontend
+    io.emit("statusError", {
+      equipamentoId: equipamento.id,
+      error: err.message,
+    });
   }
 }
