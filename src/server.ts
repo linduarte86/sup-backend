@@ -15,6 +15,7 @@ dotenv.config();
 
 app.use(router);
 
+// Middleware de tratamento de erros
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof Error) {
     return res.status(400).json({
@@ -28,6 +29,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
+// Middleware para rotas não encontradas
 app.use((req, res) => {
   res.status(404).json({ error: "Rota não encontrada." });
 });
