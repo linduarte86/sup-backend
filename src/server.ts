@@ -5,10 +5,12 @@ import 'express-async-errors';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
+import prismaClient from './prisma';
 import { startEquipamentoTasks } from './bullRedis/tasks/supervisor/scheduler';
 import "./bullRedis/queues/supervisor/supervisorQueues";
 
 import { router } from './routes';
+
 
 dotenv.config();
 
@@ -21,9 +23,10 @@ app.use(router);
 const httpServer = http.createServer(app);
 
 // inicialização do Socket.io
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',');
 export const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "*", // Defina a origem permitida para o frontend
+    origin: allowedOrigins, // Defina a origem permitida para o frontend
   },
 });
 
@@ -31,9 +34,44 @@ export const io = new Server(httpServer, {
 io.on("connection", (socket) => {
   console.log(`Cliente conectado no Socket.io: ${socket.id}`);
 
-    socket.on("disconnect", () => {
-      console.log(`Cliente desconectado do Socket.io: ${socket.id}`);
-    });
+  socket.on("getStatusAtaul", async () => {
+    try {
+      const equipamentos = await prismaClient.equipamento.findMany({
+        include: {
+          LogFalha: {
+            orderBy: {
+              created_at: "desc"
+            },
+            take: 1
+          },
+          Zonas:{
+            orderBy:{
+              name: "desc"
+            }
+          }
+        }
+      });
+
+      // monta o formato de resposta para o frontend
+      const status = equipamentos.map(equip => ({
+        id: equip.id,
+        nome: equip.name,
+        ip: equip.ip,
+        porta: equip.port,
+        zona: equip.Zonas.map(z => z.name),
+        description: equip.description,
+        status: equip.LogFalha[0]?.descricao || null,
+      }));
+
+      // envia o status atualizado para o cliente conectado
+      socket.emit("statusAtual", status);
+    } catch (err) {
+      console.log("Erro ao enviar status:", err);
+    }
+  })
+  socket.on("disconnect", () => {
+    console.log(`Cliente desconectado do Socket.io: ${socket.id}`);
+  });
 });
 
 // Middleware de tratamento de erros

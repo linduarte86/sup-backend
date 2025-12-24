@@ -10,7 +10,12 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Connection URLs are no longer supported in schema.prisma.
+  // Move connection URLs for Migrate to prisma.config.ts and pass either
+  // `adapter` for a direct database connection or `accelerateUrl` to the
+  // PrismaClient constructor as described in:
+  // https://pris.ly/d/config-datasource
+  // https://pris.ly/d/prisma7-client-config
 }
 
 // comando criar migration: yarn prisma migrate dev

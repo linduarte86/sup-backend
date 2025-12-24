@@ -9,6 +9,7 @@ import axios from "axios";
 import { io } from "../../../server";
 import { LogsFalhasService } from "../../../services/logs/logsFalhasService";
 import dotenv from "dotenv";
+import prismaClient from '../../../prisma';
 
 dotenv.config();
 
@@ -33,13 +34,31 @@ export const supervisorCheckProcesor = async (job: Job) => {
     );
 
     console.log(`Resposta do equipamento ${equipamento.name}:`, response.data);
-    
+
     // Chama o serviço de logs de falhas
     await LogsFalhasService(response.data, equipamento);
+
+    // Busca as zonas do equipamento no banco para enviar ao frontend
+    const zonas = await prismaClient.zonas.findMany({
+      where: { equipamentoId: equipamento.id },
+      select: {
+        name: true,
+        numeroCanal: true
+      },
+      orderBy: {
+        numeroCanal: 'asc'
+      }
+
+    });
+    const equipamentoZona = Array.isArray(zonas) ? zonas.map(z => z.name) : [];
 
     // Emite o status atualizado via Socket.io para o frontend
     io.emit("statusEquipamento", {
       equipamentoId: equipamento.id,
+      equipamentoIP: equipamento.ip,
+      equipamentoPorta: equipamento.port,
+      equipamentoDescricao: equipamento.description,
+      equipamentoZona,
       status: response.data,
     });
 

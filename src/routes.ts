@@ -1,4 +1,6 @@
 import { Router } from "express";
+import multer from 'multer';
+import path from 'path';
 
 import { CreateUserController } from "./controllers/user/CreateUserController";
 import { isAuthenticated } from "./middlewares/isAuthenticated";
@@ -20,7 +22,12 @@ import { ReadTempoMensagemController } from "./controllers/tempoEnvioMensagem/re
 import { UpdateTempoMensagemController } from "./controllers/tempoEnvioMensagem/updateTempoMensagemController";
 import { ReadLogsController } from "./controllers/logs/readLogsController";
 import { DeleteLogsController } from "./controllers/logs/deleteLogsController";
+import { DeleteAllLogsController } from "./controllers/logs/deleteAllLogsController";
 import { UpdateZonaController } from "./controllers/zona/UpdateZonaController";
+import { GerarBackupController } from "./controllers/backup/GerarBackupController";
+import { RestaurarBackupController } from "./controllers/backup/RestaurarBackupController";
+
+const upload = multer({ dest: path.join(process.cwd(), 'uploads') });
 
 const router = Router();
 
@@ -59,6 +66,11 @@ router.put('/tempo-mensagem/:id', isAuthenticated, new UpdateTempoMensagemContro
 //--ROTAS DE LOGS
 router.get('/logs', isAuthenticated, new ReadLogsController().handle);
 router.delete('/logs/:log_id', isAuthenticated, new DeleteLogsController().handle);
+router.delete('/logs', isAuthenticated, new DeleteAllLogsController().handle);
+
+//-- ROTAS DE BACKUP
+router.get('/backup/download', isAuthenticated, new GerarBackupController().handle);
+router.post('/backup/restore', isAuthenticated, upload.single('file'), new RestaurarBackupController().handle);
 
 
 export { router };

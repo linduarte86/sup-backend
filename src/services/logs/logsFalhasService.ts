@@ -1,6 +1,6 @@
 import prismaClient from "../../prisma";
 import { sendNotification } from "../../bullRedis/tasks/notification/notificationScheduler";
-
+import { io } from "../../server";
 
 async function LogsFalhasService(response, equipamento) {
   const { RESPOSTA } = response;
@@ -14,7 +14,7 @@ async function LogsFalhasService(response, equipamento) {
 
   // Monta o estado atual das falhas
   const falhasAmplificadoresAtuais = RESPOSTA.falhasAmplificadores.filter(f => f.includes("Falha"));
-  const falhasLinhasAtuais = RESPOSTA.falhasLinhas.filter(f => f.includes("Alta") || f.includes("Baixa"));
+  const falhasLinhasAtuais = RESPOSTA.falhasLinhas.filter(f => f.includes("Alta") || f.includes("Baixa") || f.includes("Falha de aterramento"));
   const statusGeralAtual = RESPOSTA.statusGeral;
   const statusReservaAtual = RESPOSTA.statusReserva;
 
@@ -122,6 +122,18 @@ async function LogsFalhasService(response, equipamento) {
 
   console.log(`Falhas registradas para ${equipamento.name}`);
 
+  // Emite para todos os clientes conectados via Socket.io
+  io.emit("novaFalha", {
+    equipamentoId: equipamento.id,
+    equipamentoDescricao: equipamento.description,
+    log: {
+      id: logFalha.id,
+      descricao: logFalha.descricao,
+      itens: [...amplificadorFalhas, ...linhaFalhas],
+      created_at: logFalha.created_at,
+    },
+  });
+
   const tempoMensagem = await prismaClient.tempoEnvioMensagem.findFirst({
     select: { tempo: true }
   });
@@ -153,7 +165,7 @@ async function LogsFalhasService(response, equipamento) {
         return prefix ? `${prefix} - ${desc}` : desc;
       });
 
-      const mensagem = `\nFalha detectada no equipamento: ${equipamento.name}\n\nStatus geral: ${statusGeralAtual}\nStatus do amplificador reserva: ${statusReservaAtual}\n\nAmplificadores com falha:\n${amplificadorLinhas.length ? amplificadorLinhas.map(f => `- ${f}`).join("\n") : "Nenhum"}\n\nLinhas de sonofletores com falha:\n${linhaLinhas.length ? linhaLinhas.map(f => `- ${f}`).join("\n") : "Nenhuma"}\n`;
+      const mensagem = `\nFalha detectada pelo o equipamento: ${equipamento.name}\n\nStatus geral: ${statusGeralAtual}\nStatus do amplificador reserva: ${statusReservaAtual}\n\nAmplificadores com falha:\n${amplificadorLinhas.length ? amplificadorLinhas.map(f => `- ${f}`).join("\n") : "Nenhum"}\n\nLinhas de sonofletores com falha:\n${linhaLinhas.length ? linhaLinhas.map(f => `- ${f}`).join("\n") : "Nenhuma"}\n`;
       await sendNotification(equipamento, mensagem);
     }
   }, tempoMensagem.tempo);
