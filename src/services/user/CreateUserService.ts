@@ -31,19 +31,69 @@ class CreateUserService {
         email: data.email,
         password: passwordHash,
         nivel: data.nivel as any
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        nivel: true,
-        created_at: true,
-      },
+      }
     });
 
+    //Para obrigar operador ter pelo menos uma permissão
+    if (
+      data.nivel === 'OPERADOR' &&
+      data.permissions &&
+      data.permissions.length > 0
+    ) {
+
+      for (const permissionKey of data.permissions) {
+
+        const permission =
+          await prismaClient.permission.findUnique({
+            where: {
+              key: permissionKey
+            }
+          });
+
+        if (permission) {
+
+          await prismaClient.userPermission.create({
+            data: {
+              userId: user.id,
+              permissionId: permission.id
+            }
+          });
+        }
+      }
+    }
+
+    // BUSCAR USUÁRIO COMPLETO
+
+    const userComplete =
+      await prismaClient.user.findUnique({
+        where: {
+          id: user.id
+        },
+        include: {
+          permissions: {
+            include: {
+              permission: true
+            }
+          }
+        }
+      });
+
+    // RETORNO
+
     return {
-      ...user, // ...user, permite alterar o created_at com o formattedDate
-      created_at: TimeZoneConfig.timeZone(user.created_at)
+      id: userComplete?.id,
+      name: userComplete?.name,
+      email: userComplete?.email,
+      nivel: userComplete?.nivel,
+
+      permissions:
+        userComplete?.permissions.map(
+          item => item.permission.key
+        ) || [],
+
+      created_at: TimeZoneConfig.timeZone(
+        userComplete!.created_at
+      )
     };
   }
 }

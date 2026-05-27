@@ -26,6 +26,10 @@ import { DeleteAllLogsController } from "./controllers/logs/deleteAllLogsControl
 import { UpdateZonaController } from "./controllers/zona/UpdateZonaController";
 import { GerarBackupController } from "./controllers/backup/GerarBackupController";
 import { RestaurarBackupController } from "./controllers/backup/RestaurarBackupController";
+import { MeController } from "./controllers/user/MeController";
+import { LogoutController } from "./controllers/user/LogoutController";
+import { ReadSystemController } from "./controllers/systemConfig/ReadSystemController";
+import { UpdateSystemController } from "./controllers/systemConfig/UpdateSystemController";
 
 const upload = multer({ dest: path.join(process.cwd(), 'uploads') });
 
@@ -36,9 +40,13 @@ const router = Router();
 //--ROTAS DE USUÁRIOS
 router.post('/users', isAuthenticated, new CreateUserController().handle);
 router.post('/auth/login', new AuthUserController().handle);
+router.post('/auth/logout', isAuthenticated, new LogoutController().handle);
 router.get('/users', isAuthenticated, new ReadUserController().handle);
 router.put('/users/:user_id', isAuthenticated, new UpdateUserController().handle);
 router.delete('/users/:user_id', isAuthenticated, new DeleteUserController().handle);
+
+// Rota Me
+router.get('/me', isAuthenticated, new MeController().handle);
 
 //--ROTAS DE EQUIPAMENTOS
 router.post('/equipamentos', isAuthenticated, new CreateEquipController().handle);
@@ -71,6 +79,10 @@ router.delete('/logs', isAuthenticated, new DeleteAllLogsController().handle);
 //-- ROTAS DE BACKUP
 router.get('/backup/download', isAuthenticated, new GerarBackupController().handle);
 router.post('/backup/restore', isAuthenticated, upload.single('file'), new RestaurarBackupController().handle);
+
+// ROTA DE CONFIGURAÇÕES DO SISTEMA
+router.get('/system-config', isAuthenticated, new ReadSystemController().handle);
+router.put('/system-config/:id', isAuthenticated, new UpdateSystemController().handle);
 
 
 export { router };

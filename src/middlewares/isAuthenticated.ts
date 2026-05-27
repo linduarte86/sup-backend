@@ -10,20 +10,26 @@ interface Payload {
 
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 
-  // Receber o token
-  const authToken = req.headers.authorization;
+  // 1) tentar via cookie (prioritário)
+  const tokenFromCookie = req.cookies?.session;
 
-  if (!authToken) {
+  // 2) fallback para Authorization (opcional)
+  const authHeader = req.headers.authorization;
+  const tokenFromHeader = authHeader?.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : null;
+
+  const token = tokenFromCookie || tokenFromHeader;
+
+  if (!token) {
     return res.status(401).end();
   }
-
-  const [, token] = authToken.split(" ")
 
   try { // validar esse token
 
     const { sub } = verify(
       token,
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET!
     ) as Payload; // afirma que será devolvido o tipo Payload
 
     // recuperar o id do token e cololar dentro de uma variavel user_id dentro do req.

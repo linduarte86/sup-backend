@@ -10,6 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  //url      = env("DATABASE_URL")
   // Connection URLs are no longer supported in schema.prisma.
   // Move connection URLs for Migrate to prisma.config.ts and pass either
   // `adapter` for a direct database connection or `accelerateUrl` to the
@@ -24,7 +25,10 @@ model User {
   name       String
   email      String       @unique
   password   String
+
   nivel      NivelUsuario @default(OPERADOR) // padrão se não for informado
+  permissions UserPermission[]
+
   created_at DateTime     @default(now())
   update_at  DateTime     @updatedAt
 
@@ -34,6 +38,27 @@ model User {
 enum NivelUsuario {
   ADMIN
   OPERADOR
+}
+
+model Permission {
+  id          String @id @default(uuid())
+  key         String @unique
+  description String
+
+  users       UserPermission[]
+
+  @@map("permissions")
+}
+
+model UserPermission {
+  userId       String
+  permissionId String
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId]) // Garante que um usuário não tenha a mesma permissão mais de uma vez
+  @@map("users_permissions")
 }
 
 model Equipamento {
@@ -152,6 +177,19 @@ model TempoEnvioMensagem {
   update_at DateTime @updatedAt
 
   @@map("tempo_envio_mensagens")
+}
+
+model SystemConfig {
+  id String @id @default(uuid()) @db.Uuid
+  empresaName String? @map("empresa_name") @db.VarChar(200)
+  logoUrl String? @map("logo_url")
+  email String? @db.VarChar(200)
+  telefone String? @db.VarChar(20)
+  endereco String? @db.Text
+  created_at DateTime @default(now()) @map("created_at")
+  update_at DateTime @updatedAt @map("update_at")
+
+  @@map("system_config")
 }
 
 // sempre que houver mudanças no schema, rodar o comando: npx prisma generate, isso recompila os clientes do Prisma com base no schema.prisma

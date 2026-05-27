@@ -6,8 +6,10 @@ import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
 import prismaClient from './prisma';
+import cookieParser from 'cookie-parser';
 import { startEquipamentoTasks } from './bullRedis/tasks/supervisor/scheduler';
 import "./bullRedis/queues/supervisor/supervisorQueues";
+import path from 'path';
 
 import { router } from './routes';
 
@@ -15,18 +17,43 @@ import { router } from './routes';
 dotenv.config();
 
 const app = express();
+
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',');
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permite chamadas sem origin (ex: Postman, cron, backend)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins?.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS bloqueado para origem: ${origin}`));
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+
+// Servir arquivos de public/uploads
+app.use(
+  '/uploads',
+  express.static(
+    path.resolve(process.cwd(), 'public', 'uploads')
+  )
+);
+
 app.use(router);
 
 // Criação do servidor HTTP e configuração do Socket.io
 const httpServer = http.createServer(app);
 
 // inicialização do Socket.io
-const allowedOrigins = process.env.CORS_ORIGIN?.split(',');
 export const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins, // Defina a origem permitida para o frontend
+    credentials: true,
   },
 });
 
@@ -44,8 +71,8 @@ io.on("connection", (socket) => {
             },
             take: 1
           },
-          Zonas:{
-            orderBy:{
+          Zonas: {
+            orderBy: {
               name: "desc"
             }
           }
