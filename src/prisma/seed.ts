@@ -85,6 +85,10 @@ async function main() {
       description: 'Restaurar backup'
     },
     {
+      key: 'INFORMACAO_VIEW',
+      description: 'Ver informações'
+    },
+    {
       key: 'LOGS_VIEW',
       description: 'Ver logs'
     },
