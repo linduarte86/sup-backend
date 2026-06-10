@@ -1,0 +1,20 @@
+# Ignore files
+node_modules
+# pasta dist
+dist
+# git
+.git
+# env files
+.env
+
+backups
+
+uploads
+
+tmp
+
+Dockerfile
+
+docker-compose.yml
+
+yarn-error.log

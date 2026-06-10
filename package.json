@@ -8,7 +8,8 @@
     "clean": "rimraf dist",
     "build": "yarn clean && tsc",
     "start": "node dist/server.js",
-    "seed": "ts-node src/prisma/seed.ts"
+    "seed": "ts-node src/prisma/seed.ts",
+    "seed_prod": "node dist/prisma/seed.js"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
