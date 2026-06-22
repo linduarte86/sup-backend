@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 
 class UpdateZonaController {
   async handle(req: Request, res: Response) {
-    const { equipamentoID } = req.params;
+    const { equipamento_id } = req.params;
     const data = req.body;
 
     try {
@@ -13,7 +13,7 @@ class UpdateZonaController {
       const validatedData = zonasUpdateSchema.parse(data);
 
       const service = new UpdateZonaService();
-      const updatedZona = await service.execute(equipamentoID, validatedData.zonas);
+      const updatedZona = await service.execute(equipamento_id, validatedData.zonas);
 
       return res.json(updatedZona);
 

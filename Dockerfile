@@ -1,7 +1,7 @@
 # =========================
 # Build
 # =========================
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /sup-backend
 
@@ -21,7 +21,10 @@ RUN yarn build
 # =========================
 # Runtime
 # =========================
-FROM node:20-alpine
+FROM node:20-bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y postgresql-client-15
 
 WORKDIR /sup-backend
 
